@@ -17,8 +17,9 @@ from pathlib import Path
 class GeometryProcessor:
     """几何数据处理器"""
     
-    def __init__(self):
+    def __init__(self, geometry_field_name: str = 'geom'):
         self.supported_excel_formats = ['.csv', '.xlsx', '.xls']
+        self.geometry_field_name = geometry_field_name
         self.processed_count = 0
         self.error_files = []
         self.success_files = []
@@ -243,9 +244,9 @@ class GeometryProcessor:
             
             print(f"✅ 成功读取文件，共 {len(df)} 行数据")
             
-            # 检查是否存在geom字段
-            if 'geom' not in df.columns:
-                raise ValueError("文件中未找到'geom'字段")
+            # 检查是否存在几何数据字段
+            if self.geometry_field_name not in df.columns:
+                raise ValueError(f"文件中未找到'{self.geometry_field_name}'字段")
             
             print("🔍 正在处理几何数据...")
             
@@ -266,7 +267,7 @@ class GeometryProcessor:
             
             for index, row in df.iterrows():
                 try:
-                    geom_str = row['geom']
+                    geom_str = row[self.geometry_field_name]
                     
                     # 检测几何格式
                     format_type, parsed_data = self.detect_geometry_format(geom_str)
@@ -351,16 +352,18 @@ class GeometryProcessor:
             else:
                 df = pd.read_excel(file_path)
             
-            if 'geom' not in df.columns:
-                return False, f"文件中未找到'geom'字段"
+            if self.geometry_field_name not in df.columns:
+                return False, f"文件中未找到'{self.geometry_field_name}'字段"
             
             return True, ""
             
         except Exception as e:
             return False, f"文件验证失败: {str(e)}"
     
-    def process_directory(self, input_dir: str, output_dir: str = None):
+    def process_directory(self, input_dir: str, output_dir: str = None, geometry_field_name: str = 'geom'):
         """批量处理目录下的所有Excel文件"""
+        # 更新几何字段名
+        self.geometry_field_name = geometry_field_name
         print(f"🔍 正在扫描目录: {input_dir}")
         
         excel_files = []
@@ -448,32 +451,37 @@ def print_usage():
     """打印使用说明"""
     print("🔲 Excel几何数据矩形面批量创建器")
     print("=" * 50)
-    print("用法: python create_rectangle_from_geojson.py <输入目录> [输出目录]")
+    print("用法: python create_rectangle_from_geojson.py <输入目录> [输出目录] [几何字段名]")
     print()
     print("参数说明:")
-    print("  <输入目录>  包含Excel文件的目录绝对路径")
-    print("  [输出目录]  生成文件的保存目录绝对路径（可选，默认保存到原目录）")
+    print("  <输入目录>    包含Excel文件的目录绝对路径")
+    print("  [输出目录]    生成文件的保存目录绝对路径（可选，默认保存到原目录）")
+    print("  [几何字段名]  几何数据字段名（可选，默认为'geom'）")
     print()
     print("示例:")
     print("  python create_rectangle_from_geojson.py C:\\data\\excel C:\\output")
+    print("  python create_rectangle_from_geojson.py C:\\data\\excel C:\\output geometry")
     print("  python create_rectangle_from_geojson.py /home/user/data")
+    print("  python create_rectangle_from_geojson.py /home/user/data /home/user/output coordinates")
     print()
     print("功能:")
     print("  - 批量处理目录下所有Excel文件(.csv, .xlsx)")
-    print("  - 自动识别geom字段中的几何格式")
+    print("  - 自动识别指定字段中的几何格式")
     print("  - 计算最小可包围矩形边框")
     print("  - 新增8个坐标字段到输出文件")
     print("  - 支持GeoJSON、WKT、JSON等多种格式")
+    print("  - 支持自定义几何数据字段名")
     print("=" * 50)
 
 def main():
     """主函数"""
-    if len(sys.argv) < 2 or len(sys.argv) > 3:
+    if len(sys.argv) < 2 or len(sys.argv) > 4:
         print_usage()
         sys.exit(1)
     
     input_dir = sys.argv[1].strip().strip('"')
-    output_dir = sys.argv[2].strip().strip('"') if len(sys.argv) == 3 else None
+    output_dir = sys.argv[2].strip().strip('"') if len(sys.argv) >= 3 else None
+    geometry_field_name = sys.argv[3].strip().strip('"') if len(sys.argv) == 4 else 'geom'
     
     if not os.path.exists(input_dir):
         print(f"❌ 输入目录不存在: {input_dir}")
@@ -492,11 +500,12 @@ def main():
             print(f"❌ 无法创建输出目录: {str(e)}")
             sys.exit(1)
     
-    processor = GeometryProcessor()
+    processor = GeometryProcessor(geometry_field_name)
     
     try:
-        processor.process_directory(input_dir, output_dir)
+        processor.process_directory(input_dir, output_dir, geometry_field_name)
         print(f"\n🎉 批量处理完成！")
+        print(f"📝 使用的几何字段名: {geometry_field_name}")
         
     except KeyboardInterrupt:
         print(f"\n⚠️ 用户中断程序执行")

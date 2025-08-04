@@ -5,13 +5,14 @@
 这是一个专门用于批量处理Excel文件中几何数据并创建矩形面的Python工具。它能够：
 
 - 📁 批量读取指定目录下所有Excel文件（.csv、.xlsx、.xls格式）
-- 🔍 自动识别Excel文件中geom字段的几何数据格式
+- 🔍 自动识别Excel文件中几何数据字段的几何数据格式（默认'geom'，可自定义）
 - 🎯 支持多种主流GIS几何格式：GeoJSON、WKT、JSON、坐标对等
 - 🔲 为每个几何数据计算最小可包围矩形边框
 - 📊 在保留原始数据的同时新增8个坐标字段
 - 💾 批量保存结果到指定目录
 - 📈 显示详细的处理进度和统计信息
 - ⚠️ 遇到格式错误文件时立即停止并提示详细信息
+- 🔧 支持自定义几何数据字段名，适应不同的数据格式
 
 ## 🚀 快速开始
 
@@ -34,12 +35,13 @@ python --version
 
 #### 命令行参数格式
 ```bash
-python create_rectangle_from_geojson.py <输入目录> [输出目录]
+python create_rectangle_from_geojson.py <输入目录> [输出目录] [几何字段名]
 ```
 
 **参数说明：**
 - `<输入目录>` - 包含Excel文件的目录绝对路径
 - `[输出目录]` - 生成文件的保存目录绝对路径（可选，默认保存到原目录）
+- `[几何字段名]` - 几何数据字段名（可选，默认为'geom'）
 
 #### 使用示例
 
@@ -48,10 +50,13 @@ python create_rectangle_from_geojson.py <输入目录> [输出目录]
 # 处理C盘data目录下的所有Excel文件
 python create_rectangle_from_geojson.py "C:\data\excel" "C:\output\processed"
 
+# 使用自定义几何字段名'geometry'
+python create_rectangle_from_geojson.py "C:\data\excel" "C:\output\processed" "geometry"
+
 # 处理当前项目中的原始数据
 python create_rectangle_from_geojson.py "D:\workSpace\workCode\中小流域\拉萨气象数据python脚本\原始接口数据"
 
-# 默认保存到原目录
+# 默认保存到原目录，使用默认'geom'字段
 python create_rectangle_from_geojson.py "C:\data\excel"
 ```
 
@@ -59,6 +64,9 @@ python create_rectangle_from_geojson.py "C:\data\excel"
 ```bash
 # 处理用户目录下的数据
 python create_rectangle_from_geojson.py "/home/user/data" "/home/user/output"
+
+# 使用自定义几何字段名'coordinates'
+python create_rectangle_from_geojson.py "/home/user/data" "/home/user/output" "coordinates"
 
 # 处理项目数据
 python create_rectangle_from_geojson.py "/path/to/input"
@@ -75,10 +83,10 @@ python create_rectangle_from_geojson.py "/path/to/input"
 - 文件扩展名验证
 - 文件大小检查
 - Excel格式解析
-- geom字段存在性检查
+- 几何数据字段存在性检查（默认检查'geom'字段，可自定义）
 
 ### 3. 几何格式识别
-自动识别geom字段中的几何数据格式：
+自动识别指定字段中的几何数据格式：
 - **GeoJSON格式**：`{"type": "Point", "coordinates": [91.1, 29.6]}`
 - **WKT格式**：`POINT(91.1 29.6)`、`POLYGON((91.1 29.6, 91.2 29.7, ...))`
 - **JSON格式**：`[91.1, 29.6]` 或 `{"lon": 91.1, "lat": 29.6}`
@@ -93,6 +101,7 @@ python create_rectangle_from_geojson.py "/path/to/input"
 - 生成四个角点坐标
 - 新增8个坐标字段
 - 保存到输出目录
+- 显示使用的几何字段名
 
 ### 5. 结果输出
 生成的文件命名格式：`原文件名_with_bounds.扩展名`
@@ -123,7 +132,7 @@ python create_rectangle_from_geojson.py "/path/to/input"
   📊 已处理 100 行数据...
 ✅ 已生成: points_with_bounds.csv
 📊 处理结果: 成功 150 行，失败 0 行
-```
+📝 使用的几何字段名: geom
 
 ### 新增字段说明
 每个输出的Excel文件在保留原始数据的同时，新增以下8个字段：
@@ -145,6 +154,38 @@ id,name,geom,top_left_longitude,top_left_latitude,bottom_left_longitude,bottom_l
 1,拉萨站,{"type":"Point","coordinates":[91.1,29.6]},91.1,29.6,91.1,29.6,91.1,29.6,91.1,29.6
 2,林芝站,{"type":"Point","coordinates":[94.3,29.7]},94.3,29.7,94.3,29.7,94.3,29.7,94.3,29.7
 ```
+
+## 🔧 自定义几何字段名
+
+### 功能说明
+工具支持自定义几何数据字段名，以适应不同的数据格式和命名习惯。
+
+### 使用方法
+```bash
+# 使用默认字段名'geom'
+python create_rectangle_from_geojson.py "C:\data\excel"
+
+# 使用自定义字段名'geometry'
+python create_rectangle_from_geojson.py "C:\data\excel" "C:\output" "geometry"
+
+# 使用自定义字段名'coordinates'
+python create_rectangle_from_geojson.py "C:\data\excel" "C:\output" "coordinates"
+```
+
+### 常见字段名示例
+| 字段名 | 说明 | 适用场景 |
+|--------|------|----------|
+| `geom` | 默认字段名 | 标准GIS数据 |
+| `geometry` | 几何字段 | 常见GIS软件导出 |
+| `coordinates` | 坐标字段 | 简单坐标数据 |
+| `shape` | 形状字段 | 某些CAD软件导出 |
+| `location` | 位置字段 | 位置数据 |
+| `spatial_data` | 空间数据字段 | 专业GIS数据 |
+
+### 注意事项
+- 字段名区分大小写
+- 如果指定的字段名不存在，程序会报错并停止执行
+- 建议在运行前检查Excel文件的列名
 
 ## 🔧 支持的几何格式
 
@@ -228,7 +269,7 @@ id,name,geom,top_left_longitude,top_left_latitude,bottom_left_longitude,bottom_l
 
 ### 文件格式要求
 - 支持 `.csv`、`.xlsx`、`.xls` 文件扩展名
-- 文件必须包含名为 `geom` 的列
+- 文件必须包含几何数据列（默认名为 `geom`，可自定义）
 - 使用UTF-8编码
 - 文件不能为空
 
@@ -270,11 +311,11 @@ id,name,geom,top_left_longitude,top_left_latitude,bottom_left_longitude,bottom_l
    ```
    **解决方案**：根据错误信息修复文件格式
 
-5. **缺少geom字段**
+5. **缺少几何数据字段**
    ```
-   ❌ 文件中未找到'geom'字段
+   ❌ 文件中未找到'geometry'字段
    ```
-   **解决方案**：确保Excel文件包含名为geom的列
+   **解决方案**：确保Excel文件包含指定的几何数据列，或使用正确的字段名参数
 
 ## 📚 技术细节
 
@@ -326,6 +367,6 @@ id,name,geom,top_left_longitude,top_left_latitude,bottom_left_longitude,bottom_l
 
 ---
 
-**版本**: 2.0.0  
+**版本**: 2.1.0  
 **更新日期**: 2025年  
 **维护者**: liguiyuan 

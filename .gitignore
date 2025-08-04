@@ -1,7 +1,36 @@
-/geojson_bounds_calculator.py
-/geojson_bounds_to_rectangle.py
-/main.py
-/README.md
-/rectangle_generator.py
-/原始接口数据
-/结果数据文件
+# Python字节码缓存文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python虚拟环境
+venv/
+env/
+ENV/
+
+# IDE配置文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 操作系统生成的文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.temp
+
+# 数据文件（根据项目需要调整）
+*.csv
+*.xlsx
+*.json
+*.geojson
+
+# 输出文件
+output/
+results/
