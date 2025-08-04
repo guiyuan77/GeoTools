@@ -1,23 +1,31 @@
-# GeoJSON矩形面批量创建器
+# Excel几何数据矩形面批量创建器
 
 ## 📋 功能描述
 
-这是一个专门用于批量处理GeoJSON文件并创建矩形面的Python工具。它能够：
+这是一个专门用于批量处理Excel文件中几何数据并创建矩形面的Python工具。它能够：
 
-- 📁 批量读取指定目录下所有GeoJSON文件（点、线、面、要素集合等）
-- 🔍 自动验证所有文件的GeoJSON格式
-- 🔲 为每个文件生成对应的矩形面GeoJSON
+- 📁 批量读取指定目录下所有Excel文件（.csv、.xlsx、.xls格式）
+- 🔍 自动识别Excel文件中geom字段的几何数据格式
+- 🎯 支持多种主流GIS几何格式：GeoJSON、WKT、JSON、坐标对等
+- 🔲 为每个几何数据计算最小可包围矩形边框
+- 📊 在保留原始数据的同时新增8个坐标字段
 - 💾 批量保存结果到指定目录
-- 📊 显示详细的处理进度和统计信息
+- 📈 显示详细的处理进度和统计信息
 - ⚠️ 遇到格式错误文件时立即停止并提示详细信息
 
 ## 🚀 快速开始
 
 ### 安装依赖
 
-本工具仅使用Python标准库，无需安装额外依赖：
+本工具需要安装pandas库来处理Excel文件：
 
 ```bash
+# 安装pandas
+pip install pandas
+
+# 如果需要处理.xlsx文件，还需要安装openpyxl
+pip install openpyxl
+
 # 确保Python版本 >= 3.6
 python --version
 ```
@@ -26,22 +34,25 @@ python --version
 
 #### 命令行参数格式
 ```bash
-python create_rectangle_from_geojson.py <输入目录> <输出目录>
+python create_rectangle_from_geojson.py <输入目录> [输出目录]
 ```
 
 **参数说明：**
-- `<输入目录>` - 包含GeoJSON文件的目录绝对路径
-- `<输出目录>` - 生成文件的保存目录绝对路径
+- `<输入目录>` - 包含Excel文件的目录绝对路径
+- `[输出目录]` - 生成文件的保存目录绝对路径（可选，默认保存到原目录）
 
 #### 使用示例
 
 **Windows系统：**
 ```bash
-# 处理C盘data目录下的所有GeoJSON文件
-python create_rectangle_from_geojson.py "C:\data\geojson" "C:\output\rectangles"
+# 处理C盘data目录下的所有Excel文件
+python create_rectangle_from_geojson.py "C:\data\excel" "C:\output\processed"
 
 # 处理当前项目中的原始数据
-python create_rectangle_from_geojson.py "D:\workSpace\workCode\中小流域\拉萨气象数据python脚本\原始接口数据" "D:\workSpace\workCode\中小流域\拉萨气象数据python脚本\结果数据文件"
+python create_rectangle_from_geojson.py "D:\workSpace\workCode\中小流域\拉萨气象数据python脚本\原始接口数据"
+
+# 默认保存到原目录
+python create_rectangle_from_geojson.py "C:\data\excel"
 ```
 
 **Linux/Mac系统：**
@@ -50,32 +61,41 @@ python create_rectangle_from_geojson.py "D:\workSpace\workCode\中小流域\拉�
 python create_rectangle_from_geojson.py "/home/user/data" "/home/user/output"
 
 # 处理项目数据
-python create_rectangle_from_geojson.py "/path/to/input" "/path/to/output"
+python create_rectangle_from_geojson.py "/path/to/input"
 ```
 
 ## 📁 处理流程
 
 ### 1. 文件扫描
-程序会扫描输入目录下所有 `.geojson` 和 `.json` 文件
+程序会扫描输入目录下所有 `.csv`、`.xlsx`、`.xls` 文件
 
 ### 2. 格式验证
-对每个文件进行严格的GeoJSON格式验证：
+对每个文件进行严格的Excel格式验证：
 - 文件存在性检查
 - 文件扩展名验证
 - 文件大小检查
-- JSON格式解析
-- GeoJSON结构验证
-- 坐标数据有效性检查
+- Excel格式解析
+- geom字段存在性检查
 
-### 3. 批量处理
+### 3. 几何格式识别
+自动识别geom字段中的几何数据格式：
+- **GeoJSON格式**：`{"type": "Point", "coordinates": [91.1, 29.6]}`
+- **WKT格式**：`POINT(91.1 29.6)`、`POLYGON((91.1 29.6, 91.2 29.7, ...))`
+- **JSON格式**：`[91.1, 29.6]` 或 `{"lon": 91.1, "lat": 29.6}`
+- **坐标对格式**：`(91.1, 29.6)`
+- **坐标数组格式**：`[91.1, 29.6]`
+
+### 4. 批量处理
 为每个有效文件：
+- 解析几何数据格式
+- 提取所有坐标点
 - 计算边界范围
 - 生成四个角点坐标
-- 创建矩形面GeoJSON
+- 新增8个坐标字段
 - 保存到输出目录
 
-### 4. 结果输出
-生成的文件命名格式：`原文件名四角边框矩形面.geojson`
+### 5. 结果输出
+生成的文件命名格式：`原文件名_with_bounds.扩展名`
 
 ## 📊 输出结果
 
@@ -83,67 +103,68 @@ python create_rectangle_from_geojson.py "/path/to/input" "/path/to/output"
 程序会显示详细的处理信息：
 
 ```
-🔍 正在扫描目录: C:\data\geojson
-📁 找到 3 个GeoJSON文件
+🔍 正在扫描目录: C:\data\excel
+📁 找到 3 个Excel文件
 ================================================================================
 🔍 正在验证文件格式...
-  检查: points.geojson
+  检查: points.csv
   ✅ 格式正确
-  检查: lines.geojson
+  检查: lines.xlsx
   ✅ 格式正确
-  检查: polygons.geojson
+  检查: polygons.xls
   ✅ 格式正确
 
 ✅ 所有文件验证通过，开始处理...
 ================================================================================
 
-📄 处理文件: points.geojson
-  📍 边界范围: 90.900002° ~ 91.400002° (经度), 29.549999° ~ 29.700001° (纬度)
-  🎯 中心点: [91.150002, 29.625000]
-  📏 尺寸: 0.500000° × 0.150002°
-✅ 已生成: points四角边框矩形面.geojson
+📄 处理文件: points.csv
+✅ 成功读取文件，共 150 行数据
+🔍 正在处理几何数据...
+  📊 已处理 100 行数据...
+✅ 已生成: points_with_bounds.csv
+📊 处理结果: 成功 150 行，失败 0 行
 ```
 
-### 生成文件信息
-每个生成的矩形面GeoJSON文件包含：
+### 新增字段说明
+每个输出的Excel文件在保留原始数据的同时，新增以下8个字段：
 
-```json
-{
-  "type": "FeatureCollection",
-  "features": [
-    {
-      "type": "Feature",
-      "geometry": {
-        "type": "Polygon",
-        "coordinates": [[[min_lon, min_lat], [min_lon, max_lat], [max_lon, max_lat], [max_lon, min_lat], [min_lon, min_lat]]]
-      },
-      "properties": {
-        "name": "原文件名四角边框矩形面",
-        "description": "通过原文件名边界数据生成的矩形面",
-        "source_file": "原文件名",
-        "bounds": {...},
-        "center": [center_lon, center_lat],
-        "width": width_degrees,
-        "height": height_degrees,
-        "bbox": [min_lon, min_lat, max_lon, max_lat]
-      }
-    }
-  ]
-}
+| 字段名 | 描述 | 数据类型 |
+|--------|------|----------|
+| `top_left_longitude` | 左上角经度 | float |
+| `top_left_latitude` | 左上角纬度 | float |
+| `bottom_left_longitude` | 左下角经度 | float |
+| `bottom_left_latitude` | 左下角纬度 | float |
+| `top_right_longitude` | 右上角经度 | float |
+| `top_right_latitude` | 右上角纬度 | float |
+| `bottom_right_longitude` | 右下角经度 | float |
+| `bottom_right_latitude` | 右下角纬度 | float |
+
+### 输出文件示例
+```csv
+id,name,geom,top_left_longitude,top_left_latitude,bottom_left_longitude,bottom_left_latitude,top_right_longitude,top_right_latitude,bottom_right_longitude,bottom_right_latitude
+1,拉萨站,{"type":"Point","coordinates":[91.1,29.6]},91.1,29.6,91.1,29.6,91.1,29.6,91.1,29.6
+2,林芝站,{"type":"Point","coordinates":[94.3,29.7]},94.3,29.7,94.3,29.7,94.3,29.7,94.3,29.7
 ```
 
-## 🔧 支持的GeoJSON格式
+## 🔧 支持的几何格式
 
-| 类型 | 描述 | 支持状态 |
-|------|------|----------|
-| Point | 点 | ✅ |
-| LineString | 线串 | ✅ |
-| Polygon | 多边形 | ✅ |
-| MultiPoint | 多点 | ✅ |
-| MultiLineString | 多线串 | ✅ |
-| MultiPolygon | 多多边形 | ✅ |
-| Feature | 要素 | ✅ |
-| FeatureCollection | 要素集合 | ✅ |
+| 格式类型 | 描述 | 示例 | 支持状态 |
+|----------|------|------|----------|
+| GeoJSON | 标准GeoJSON格式 | `{"type": "Point", "coordinates": [91.1, 29.6]}` | ✅ |
+| WKT | Well-Known Text格式 | `POINT(91.1 29.6)` | ✅ |
+| JSON | 简单JSON格式 | `[91.1, 29.6]` | ✅ |
+| 坐标对 | 括号包围的坐标 | `(91.1, 29.6)` | ✅ |
+| 坐标数组 | 方括号包围的坐标 | `[91.1, 29.6]` | ✅ |
+
+### 支持的几何类型
+- **Point** - 点
+- **LineString** - 线串
+- **Polygon** - 多边形
+- **MultiPoint** - 多点
+- **MultiLineString** - 多线串
+- **MultiPolygon** - 多多边形
+- **Feature** - 要素
+- **FeatureCollection** - 要素集合
 
 ## ⚠️ 错误处理机制
 
@@ -160,28 +181,28 @@ python create_rectangle_from_geojson.py "/path/to/input" "/path/to/output"
 ❌ 发现格式错误的文件，程序停止执行
 请手动处理以下文件后重新运行程序:
 --------------------------------------------------------------------------------
-文件: invalid_file.geojson
-错误: JSON格式错误: Expecting ',' delimiter - invalid_file.geojson
+文件: invalid_file.csv
+错误: 文件中未找到'geom'字段
 ----------------------------------------
-文件: empty_file.geojson
-错误: 文件为空: empty_file.geojson
+文件: empty_file.xlsx
+错误: 文件为空: empty_file.xlsx
 ----------------------------------------
 ```
 
 ### 常见错误类型
 - **文件不存在**：检查文件路径
 - **文件为空**：确保文件包含数据
-- **JSON格式错误**：检查JSON语法
+- **缺少geom字段**：确保Excel文件包含geom列
+- **几何格式错误**：检查geom字段的数据格式
 - **编码错误**：确保使用UTF-8编码
-- **无效GeoJSON类型**：检查type字段
-- **缺少坐标数据**：确保包含有效坐标
+- **无效坐标数据**：确保包含有效的经纬度坐标
 
 ## 💡 应用场景
 
 ### 1. 批量数据处理
-- 处理大量GeoJSON文件
+- 处理大量Excel文件中的几何数据
 - 自动化边界计算
-- 批量生成矩形面
+- 批量生成矩形边框坐标
 
 ### 2. 地图可视化
 - 为地图组件批量设置视图范围
@@ -198,11 +219,16 @@ python create_rectangle_from_geojson.py "/path/to/input" "/path/to/output"
 - 创建缓冲区分析的基础
 - 数据裁剪和分割
 
+### 5. 气象数据处理
+- 处理气象站点坐标数据
+- 计算站点分布范围
+- 生成预报区域边界
+
 ## 📝 使用注意事项
 
 ### 文件格式要求
-- 支持 `.geojson` 和 `.json` 文件扩展名
-- 文件必须是有效的GeoJSON格式
+- 支持 `.csv`、`.xlsx`、`.xls` 文件扩展名
+- 文件必须包含名为 `geom` 的列
 - 使用UTF-8编码
 - 文件不能为空
 
@@ -212,8 +238,8 @@ python create_rectangle_from_geojson.py "/path/to/input" "/path/to/output"
 - 支持绝对路径和相对路径
 
 ### 性能考虑
-- 对于大型目录，处理时间可能较长
-- 建议单次处理文件数量不超过1000个
+- 对于大型Excel文件，处理时间可能较长
+- 建议单次处理文件数量不超过100个
 - 内存使用量与文件大小成正比
 
 ## 🔍 故障排除
@@ -232,32 +258,40 @@ python create_rectangle_from_geojson.py "/path/to/input" "/path/to/output"
    ```
    **解决方案**：检查输出目录的写入权限
 
-3. **文件格式错误**
+3. **缺少依赖**
+   ```
+   ModuleNotFoundError: No module named 'pandas'
+   ```
+   **解决方案**：安装pandas库 `pip install pandas`
+
+4. **文件格式错误**
    ```
    ❌ 发现格式错误的文件，程序停止执行
    ```
    **解决方案**：根据错误信息修复文件格式
 
-4. **编码问题**
+5. **缺少geom字段**
    ```
-   ❌ 文件编码错误，请确保使用UTF-8编码
+   ❌ 文件中未找到'geom'字段
    ```
-   **解决方案**：将文件重新保存为UTF-8编码
+   **解决方案**：确保Excel文件包含名为geom的列
 
 ## 📚 技术细节
 
 ### 算法说明
 
-1. **文件扫描**：使用glob模式匹配查找所有GeoJSON文件
+1. **文件扫描**：使用glob模式匹配查找所有Excel文件
 2. **格式验证**：多层次验证确保文件格式正确
-3. **坐标提取**：递归遍历GeoJSON结构，提取所有坐标点
-4. **边界计算**：计算所有坐标点的最小/最大经纬度
-5. **矩形生成**：根据边界生成四个角点坐标
-6. **批量保存**：按指定命名规则保存所有结果
+3. **几何格式识别**：自动检测geom字段中的几何数据格式
+4. **坐标提取**：递归遍历几何结构，提取所有坐标点
+5. **边界计算**：计算所有坐标点的最小/最大经纬度
+6. **矩形生成**：根据边界生成四个角点坐标
+7. **批量保存**：按指定命名规则保存所有结果
 
 ### 性能优化
 
-- 使用glob模块高效扫描文件
+- 使用pandas高效处理Excel文件
+- 智能几何格式识别算法
 - 递归算法处理嵌套几何结构
 - 单次遍历完成所有坐标提取
 - 内存友好的流式处理
@@ -268,7 +302,8 @@ python create_rectangle_from_geojson.py "/path/to/input" "/path/to/output"
 
 ### 开发环境
 - Python 3.6+
-- 标准库依赖
+- pandas库依赖
+- openpyxl库（用于.xlsx文件）
 - 支持Windows/Linux/macOS
 
 ### 代码规范
@@ -291,6 +326,6 @@ python create_rectangle_from_geojson.py "/path/to/input" "/path/to/output"
 
 ---
 
-**版本**: 1.0.1  
+**版本**: 2.0.0  
 **更新日期**: 2025年  
 **维护者**: liguiyuan 
